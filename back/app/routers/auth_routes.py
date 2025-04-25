@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 import hashlib
 import sqlite3
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
+
+# Load environment variables
+load_dotenv()
 
 # Create a simple login model
 class LoginData(BaseModel):
@@ -16,20 +21,23 @@ def hash_password(password: str) -> str:
     """Create SHA-256 hash of password"""
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Basic function to create admin user using raw SQL
+# Function to create admin user with password from .env
 def create_admin_user():
-    """Create admin user directly using SQL"""
+    """Create admin user with password from .env file"""
     try:
         # Connect to database
         conn = sqlite3.connect('chamados.db')
         cursor = conn.cursor()
         
+        # Get password from .env
+        env_password = os.getenv('password', "123456")
+        
         # Check if admin exists
         cursor.execute("SELECT * FROM Usuario WHERE username = 'admin'")
         if not cursor.fetchone():
-            print("Usuaio nao existe, criando usuario admin")
+            print("Creating admin user with password from .env file")
             # Hash password
-            password_hash = hash_password("uma senha segura")
+            password_hash = hash_password(env_password)
             
             # Insert admin user
             cursor.execute(
