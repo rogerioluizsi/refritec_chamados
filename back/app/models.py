@@ -3,6 +3,18 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
 
+class Usuario(Base):
+    """Modelo para a tabela de Usuários"""
+    __tablename__ = "Usuario"
+    
+    id_usuario = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nome = Column(String(100), nullable=False)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    senha = Column(String(100), nullable=False)
+    
+    def __repr__(self):
+        return f"<Usuario(id={self.id_usuario}, nome={self.nome}, username={self.username})>"
+
 class Cliente(Base):
     """Modelo para a tabela Cliente"""
     __tablename__ = "Cliente"

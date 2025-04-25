@@ -20,7 +20,7 @@ export interface Chamado {
   aparelho: string;
   status: ChamadoStatus;
   observacao: string;
-  data_criacao: string;
+  data_abertura: string;
   data_prevista: string;
   cliente?: Cliente;
 }

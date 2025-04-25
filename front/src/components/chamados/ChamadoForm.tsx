@@ -22,7 +22,6 @@ interface ChamadoData {
   descricao: string;
   aparelho: string;
   status: ChamadoStatus;
-  valor: number;
   observacao: string;
   data_prevista: Date | null;
 }
@@ -36,7 +35,6 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
     descricao: '',
     aparelho: '',
     status: 'Aberto',
-    valor: 0,
     observacao: '',
     data_prevista: null,
   });
@@ -45,7 +43,7 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'valor' ? parseFloat(value) || 0 : value
+      [name]: value
     }));
   };
 
@@ -69,6 +67,7 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
       const chamadoData: CreateChamadoDto = {
         ...formData,
         id_cliente: clienteId,
+        valor: 0, // Set a default value for the backend
       };
       
       await createChamado.mutateAsync(chamadoData);
@@ -122,22 +121,6 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
                 <MenuItem value="Cancelado">Cancelado</MenuItem>
               </Select>
             </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              type="number"
-              name="valor"
-              label="Valor Estimado (R$)"
-              value={formData.valor === 0 ? '' : formData.valor}
-              onChange={handleChange}
-              inputProps={{ 
-                step: "0.01",
-                min: "0",
-                placeholder: "0,00"
-              }}
-            />
           </Grid>
 
           <Grid item xs={12} sm={6}>

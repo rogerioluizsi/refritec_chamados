@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 
 # Esquemas para Cliente
@@ -120,4 +120,29 @@ class ChamadoDetail(Chamado):
 
 class ChamadoPaginated(PaginatedResponse):
     """Esquema para resposta paginada de chamados"""
-    items: List[Chamado] 
+    items: List[Chamado]
+
+# Schemas de Usuário
+class UsuarioBase(BaseModel):
+    nome: str
+    username: str
+
+class UsuarioCreate(UsuarioBase):
+    password: str
+    
+    class Config:
+        # Map password to senha when going to ORM model
+        orm_mode = True
+        from_attributes = True
+        alias_generator = lambda x: "senha" if x == "password" else x
+
+class UsuarioLogin(BaseModel):
+    username: str
+    password: str
+
+class Usuario(UsuarioBase):
+    id_usuario: int
+    
+    class Config:
+        orm_mode = True
+        from_attributes = True 

@@ -45,10 +45,19 @@ CREATE TABLE Itens_Chamado (
     FOREIGN KEY (id_chamado) REFERENCES Chamados(id_chamado)
 );
 
+-- Usuario (User) table
+CREATE TABLE Usuario (
+    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    senha VARCHAR(100) NOT NULL
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_chamados_cliente ON Chamados(id_cliente);
 CREATE INDEX idx_historico_chamado ON Historico_Alteracao_Chamados(id_chamado);
 CREATE INDEX idx_itens_chamado ON Itens_Chamado(id_chamado);
+CREATE INDEX idx_usuario_username ON Usuario(username);
 
 -- Create a view to calculate total value of service calls based on items
 CREATE VIEW Chamados_Valor_Total AS

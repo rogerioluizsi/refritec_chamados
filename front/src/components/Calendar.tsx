@@ -88,6 +88,14 @@ export const Calendar: React.FC = () => {
         </IconButton>
       </Box>
 
+      <Typography 
+        variant="subtitle2" 
+        color="text.secondary" 
+        sx={{ mb: 2, textAlign: 'center' }}
+      >
+        Chamados agendados para esta data
+      </Typography>
+
       <Paper 
         elevation={0} 
         sx={{ 
@@ -120,7 +128,7 @@ export const Calendar: React.FC = () => {
             minHeight: '200px'
           }}>
             <Typography color="text.secondary">
-              Nenhum chamado para este dia
+              Nenhum chamado agendado para este dia
             </Typography>
           </Box>
         ) : (

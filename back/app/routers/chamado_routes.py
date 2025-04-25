@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, Header, Security
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date, timedelta
 from pydantic import BaseModel
+import os
 
 from ..database import get_db
 from ..models import Chamado, Cliente, ItemChamado, HistoricoAlteracaoChamado
@@ -19,10 +20,31 @@ from ..schemas import (
     ItemChamadoUpdate
 )
 
+# Get API_KEY from environment
+API_KEY = os.getenv("API_KEY")
+
+# Security dependency
+def verify_api_key(x_api_key: str = Header(..., description="API Key for authentication")):
+    if not API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="API Key not configured on server"
+        )
+    if x_api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key"
+        )
+    return x_api_key
+
 router = APIRouter(
     prefix="/api/chamados",
     tags=["chamados"],
-    responses={404: {"description": "Chamado não encontrado"}}
+    responses={
+        404: {"description": "Chamado não encontrado"},
+        401: {"description": "API Key inválida"}
+    },
+    dependencies=[Depends(verify_api_key)]  # Apply API key verification to all routes
 )
 
 # Define statistics schema
@@ -107,16 +129,20 @@ def get_chamado_statistics(db: Session = Depends(get_db)):
     total_completed = db.query(func.count(Chamado.id_chamado)).filter(Chamado.status == "Concluído").scalar() or 0
     total_canceled = db.query(func.count(Chamado.id_chamado)).filter(Chamado.status == "Cancelado").scalar() or 0
     
-    # Valor total em aberto
-    total_value_open = db.query(func.sum(Chamado.valor)).filter(
-        Chamado.status.in_(["Aberto", "Em Andamento"])
-    ).scalar() or 0.0
+    # Chamados em andamento
+    chamados_em_andamento = db.query(Chamado).filter(Chamado.status == "Em Andamento").all()
+    total_value_open = 0.0
+    for chamado in chamados_em_andamento:
+        total_value_open += calcular_valor_total_itens(db, chamado.id_chamado)
     
-    # Valor recebido no mês atual (chamados concluídos no mês)
-    valor_recebido_mes = db.query(func.sum(Chamado.valor)).filter(
+    # Chamados concluídos no mês atual
+    chamados_concluidos_mes = db.query(Chamado).filter(
         Chamado.status == "Concluído",
         Chamado.data_conclusao >= first_day_of_month
-    ).scalar() or 0.0
+    ).all()
+    valor_recebido_mes = 0.0
+    for chamado in chamados_concluidos_mes:
+        valor_recebido_mes += calcular_valor_total_itens(db, chamado.id_chamado)
     
     # Contagem de chamados por cliente
     chamados_by_client = {}
@@ -546,9 +572,9 @@ def get_chamados_by_day(
     if not date:
         date = datetime.now().date()
     
-    # Busca os chamados do dia
+    # Busca os chamados do dia pela data_prevista em vez de data_abertura
     chamados = db.query(Chamado).filter(
-        func.date(Chamado.data_abertura) == date
+        Chamado.data_prevista == date
     ).order_by(Chamado.data_abertura).all()
     
     return chamados 

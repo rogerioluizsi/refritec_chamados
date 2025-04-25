@@ -1,19 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional, Dict
 from sqlalchemy.sql import func
 from pydantic import BaseModel
+import os
 
 from ..database import get_db
 from ..models import Cliente
 from ..schemas import Cliente as ClienteSchema
 from ..schemas import ClienteCreate, ClienteUpdate, ClientePaginated
 
+# Get API_KEY from environment
+API_KEY = os.getenv("API_KEY")
+
+# Security dependency
+def verify_api_key(x_api_key: str = Header(..., description="API Key for authentication")):
+    if not API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="API Key not configured on server"
+        )
+    if x_api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key"
+        )
+    return x_api_key
+
 router = APIRouter(
     prefix="/api/clientes",
     tags=["clientes"],
-    responses={404: {"description": "Cliente não encontrado"}}
+    responses={
+        404: {"description": "Cliente não encontrado"},
+        401: {"description": "API Key inválida"}
+    },
+    dependencies=[Depends(verify_api_key)]  # Apply API key verification to all routes
 )
 
 # Define statistics schema

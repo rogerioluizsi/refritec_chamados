@@ -7,6 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/layout/Layout';
 import theme from './theme/theme';
 import { Calendar } from './components/Calendar';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -16,6 +18,7 @@ import ClienteCriarPage from './pages/ClienteCriarPage';
 import ClienteBuscarPage from './pages/ClienteBuscarPage';
 import EstatisticasPage from './pages/EstatisticasPage';
 import ChamadoCriarPage from './pages/ChamadoCriarPage';
+import ClienteEditarPage from './pages/ClienteEditarPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -33,18 +36,23 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/chamados/:id" element={<ChamadoDetailPage />} />
-              <Route path="/chamados/criar" element={<ChamadoCriarPage />} />
-              <Route path="/clientes/criar" element={<ClienteCriarPage />} />
-              <Route path="/clientes/buscar" element={<ClienteBuscarPage />} />
-              <Route path="/clientes/:id" element={<ClienteDetailPage />} />
-              <Route path="/estatisticas" element={<EstatisticasPage />} />
-              <Route path="/calendario" element={<Calendar />} />
-            </Routes>
-          </Layout>
+          <Routes>
+            {/* Public route */}
+            <Route path="/login" element={<LoginPage />} />
+            
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Layout><HomePage /></Layout>} />
+              <Route path="/chamados/:id" element={<Layout><ChamadoDetailPage /></Layout>} />
+              <Route path="/chamados/criar" element={<Layout><ChamadoCriarPage /></Layout>} />
+              <Route path="/clientes/criar" element={<Layout><ClienteCriarPage /></Layout>} />
+              <Route path="/clientes/buscar" element={<Layout><ClienteBuscarPage /></Layout>} />
+              <Route path="/clientes/editar/:id" element={<Layout><ClienteEditarPage /></Layout>} />
+              <Route path="/clientes/:id" element={<Layout><ClienteDetailPage /></Layout>} />
+              <Route path="/estatisticas" element={<Layout><EstatisticasPage /></Layout>} />
+              <Route path="/calendario" element={<Layout><Calendar /></Layout>} />
+            </Route>
+          </Routes>
         </Router>
       </ThemeProvider>
     </QueryClientProvider>

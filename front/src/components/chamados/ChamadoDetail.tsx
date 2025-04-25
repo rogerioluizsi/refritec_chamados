@@ -43,6 +43,7 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
   const [formData, setFormData] = useState<UpdateChamadoDto>({
     status: undefined,
     observacao: '',
+    data_prevista: '',
   });
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
@@ -81,12 +82,21 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
 
   const handleNewItemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewItem({
-      ...newItem,
-      [name]: name === 'quantidade' || name === 'valor_unitario' 
-        ? parseFloat(value) || 0 
-        : value,
-    });
+    
+    if (name === 'quantidade' || name === 'valor_unitario') {
+      // Convert empty string to 0, otherwise parse float
+      const numValue = value === '' ? 0 : parseFloat(value);
+      
+      setNewItem({
+        ...newItem,
+        [name]: numValue
+      });
+    } else {
+      setNewItem({
+        ...newItem,
+        [name]: value
+      });
+    }
   };
 
   const handleAddItem = () => {
@@ -154,7 +164,7 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
             </Box>
             <Box>
               <Typography variant="body1">
-                <strong>Data de Criação:</strong> {formatDate(chamado.data_criacao)}
+                <strong>Data de Criação:</strong> {formatDate(chamado.data_abertura)}
               </Typography>
             </Box>
             <Box display="flex" alignItems="center">
@@ -193,6 +203,7 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
                 setFormData({
                   status: chamado.status,
                   observacao: chamado.observacao,
+                  data_prevista: chamado.data_prevista,
                 });
                 setEditMode(true);
               }}
@@ -222,6 +233,19 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
                       <MenuItem value="Cancelado">Cancelado</MenuItem>
                     </Select>
                   </FormControl>
+                </Box>
+                <Box>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    name="data_prevista"
+                    label="Data Prevista"
+                    value={formData.data_prevista ? formData.data_prevista.split('T')[0] : ''}
+                    onChange={handleInputChange}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
                 </Box>
                 <Box sx={{ gridColumn: { xs: '1', md: '1 / span 2' } }}>
                   <TextField
@@ -318,8 +342,12 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
                   label="Valor Unitário (R$)"
                   name="valor_unitario"
                   type="number"
-                  inputProps={{ min: 0, step: 0.01 }}
-                  value={newItem.valor_unitario}
+                  inputProps={{ 
+                    min: 0, 
+                    step: 0.01,
+                    placeholder: "0,00" 
+                  }}
+                  value={newItem.valor_unitario === 0 ? '' : newItem.valor_unitario}
                   onChange={handleNewItemChange}
                 />
               </Box>
