@@ -11,7 +11,7 @@ interface ChamadoListProps {
   tecnicoId?: number;
 }
 
-const ChamadoList: React.FC<ChamadoListProps> = ({ status = 'Aberto', clienteId, searchTerm = '', tecnicoId }) => {
+const ChamadoList: React.FC<ChamadoListProps> = ({ status, clienteId, searchTerm = '', tecnicoId }) => {
   const [page, setPage] = useState(1);
   const { useListChamados } = useChamados();
   const { data, isLoading, error } = useListChamados(page, 10, status, clienteId, tecnicoId);
@@ -64,8 +64,8 @@ const ChamadoList: React.FC<ChamadoListProps> = ({ status = 'Aberto', clienteId,
       <Box my={4}>
         <Alert severity="info">
           {searchTerm
-            ? `Nenhum chamado encontrado para "${searchTerm}" com status ${status.toLowerCase()}.`
-            : `Nenhum chamado ${status.toLowerCase()} encontrado.`}
+            ? `Nenhum chamado encontrado para "${searchTerm}" com status ${status?.toLowerCase()}.`
+            : `Nenhum chamado ${status?.toLowerCase()} encontrado.`}
         </Alert>
       </Box>
     );

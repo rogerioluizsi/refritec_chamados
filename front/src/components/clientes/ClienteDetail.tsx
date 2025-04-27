@@ -11,11 +11,15 @@ import {
   Divider,
   TextField,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { useClientes } from '../../hooks/useClientes';
 import { useChamados } from '../../hooks/useChamados';
-import { Cliente } from '../../types';
+import { Cliente, ChamadoStatus } from '../../types';
 import ChamadoList from '../chamados/ChamadoList';
 
 interface ClienteDetailProps {
@@ -35,6 +39,9 @@ const ClienteDetail: React.FC<ClienteDetailProps> = ({ clienteId }) => {
     nome: '',
     endereco: '',
   });
+
+  const statusOptions: (ChamadoStatus | 'Todos')[] = ['Todos', 'Aberto', 'Em Andamento', 'Concluído', 'Cancelado'];
+  const [selectedStatus, setSelectedStatus] = useState<ChamadoStatus | 'Todos'>('Todos');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -173,7 +180,26 @@ const ClienteDetail: React.FC<ClienteDetailProps> = ({ clienteId }) => {
         Chamados do Cliente
       </Typography>
       
-      <ChamadoList clienteId={clienteId} />
+      <Box mb={2}>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel id="status-filter-label">Status</InputLabel>
+          <Select
+            labelId="status-filter-label"
+            id="status-filter"
+            value={selectedStatus}
+            label="Status"
+            onChange={(e) => setSelectedStatus(e.target.value as ChamadoStatus | 'Todos')}
+          >
+            {statusOptions.map((status) => (
+              <MenuItem key={status} value={status}>
+                {status}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+      
+      <ChamadoList clienteId={clienteId} status={selectedStatus === 'Todos' ? undefined : selectedStatus} />
     </Box>
   );
 };
