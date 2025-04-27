@@ -298,15 +298,16 @@ def list_users(current_user_role: str = Header(..., alias="X-User-Role")):
     try:
         conn = sqlite3.connect('chamados.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT username, nome, role, data_criacao, ativo FROM Usuario")
+        cursor.execute("SELECT id_usuario, username, nome, role, data_criacao, ativo FROM Usuario")
         users = cursor.fetchall()
         user_list = [
             {
-                "username": u[0],
-                "nome": u[1],
-                "role": u[2],
-                "data_criacao": u[3],
-                "ativo": bool(u[4])
+                "id_usuario": u[0],
+                "username": u[1],
+                "nome": u[2],
+                "role": u[3],
+                "data_criacao": u[4],
+                "ativo": bool(u[5])
             }
             for u in users
         ]

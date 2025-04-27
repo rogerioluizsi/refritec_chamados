@@ -1,8 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardActions, Typography, Button, Chip, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { Chamado } from '../../types';
+import { Chamado, User } from '../../types';
 import { formatDate, getDueDateStatus } from '../../utils/dateUtils';
+import { useChamados } from '../../hooks/useChamados';
 
 interface ChamadoCardProps {
   chamado: Chamado;
@@ -11,7 +12,12 @@ interface ChamadoCardProps {
 const ChamadoCard: React.FC<ChamadoCardProps> = ({ chamado }) => {
   const navigate = useNavigate();
   const dueDateStatus = getDueDateStatus(chamado.data_prevista);
-  
+  const { useUsers } = useChamados();
+  const { data: users, isLoading: isLoadingUsers } = useUsers();
+
+  // Find the responsible technician
+  const tecnico: User | undefined = users?.find((user: User) => user.id_usuario === chamado.id_usuario);
+
   // Define color based on status
   const getStatusColor = () => {
     switch (dueDateStatus.status) {
@@ -63,6 +69,12 @@ const ChamadoCard: React.FC<ChamadoCardProps> = ({ chamado }) => {
                 {chamado.cliente.telefone}
               </Typography>
             )}
+            {/* Técnico Responsável */}
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+              <strong>Técnico Responsável:</strong>{' '}
+              {isLoadingUsers ? 'Carregando...' :
+                tecnico ? `${tecnico.nome} (${tecnico.role})` : 'Não atribuído'}
+            </Typography>
           </Box>
           <Chip
             label={getStatusText()}

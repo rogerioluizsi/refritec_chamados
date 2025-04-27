@@ -16,6 +16,7 @@ export interface CreateClienteDto {
 export interface Chamado {
   id_chamado: number;
   id_cliente: number;
+  id_usuario?: number;
   descricao: string;
   aparelho: string;
   status: ChamadoStatus;
@@ -29,6 +30,7 @@ export type ChamadoStatus = 'Aberto' | 'Em Andamento' | 'Concluído' | 'Cancelad
 
 export interface CreateChamadoDto {
   id_cliente: number;
+  id_usuario?: number;
   descricao: string;
   aparelho: string;
   status: ChamadoStatus;
@@ -38,6 +40,7 @@ export interface CreateChamadoDto {
 }
 
 export interface UpdateChamadoDto {
+  id_usuario?: number;
   status?: ChamadoStatus;
   observacao?: string;
   data_prevista?: string;
@@ -83,4 +86,14 @@ export interface ChamadoStats {
   valor_recebido_mes: number;
   total_clientes: number;
   chamados_by_client: { [key: string]: number };
+}
+
+// User types
+export interface User {
+  id_usuario: number;
+  username: string;
+  nome: string;
+  role: string;
+  data_criacao: string;
+  ativo: boolean;
 } 

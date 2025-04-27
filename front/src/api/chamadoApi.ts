@@ -8,6 +8,7 @@ import {
   ItemChamado,
   CreateItemChamadoDto,
   UpdateItemChamadoDto,
+  User,
 } from '../types';
 
 export const chamadoApi = {
@@ -74,5 +75,10 @@ export const chamadoApi = {
   getChamadosByDay: async (date: string): Promise<Chamado[]> => {
     const response = await api.get<Chamado[]>(`/api/chamados/calendar/day?date=${date}`);
     return response.data;
+  },
+
+  getUsers: async (): Promise<User[]> => {
+    const response = await api.get<{ users: User[] }>(`/users`);
+    return response.data.users;
   },
 }; 

@@ -25,7 +25,7 @@ import {
 import { Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
 import { useChamados } from '../../hooks/useChamados';
 import { formatDate, getDueDateStatus } from '../../utils/dateUtils';
-import { ChamadoStatus, UpdateChamadoDto, CreateItemChamadoDto, UpdateItemChamadoDto } from '../../types';
+import { ChamadoStatus, UpdateChamadoDto, CreateItemChamadoDto, UpdateItemChamadoDto, User } from '../../types';
 import ItemList from '../../components/chamados/ItemList';
 
 interface ChamadoDetailProps {
@@ -33,17 +33,19 @@ interface ChamadoDetailProps {
 }
 
 const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
-  const { useChamadoDetails, useChamadoItems, useUpdateChamado, useAddItemToChamado } = useChamados();
+  const { useChamadoDetails, useChamadoItems, useUpdateChamado, useAddItemToChamado, useUsers } = useChamados();
   const { data: chamado, isLoading, error } = useChamadoDetails(chamadoId);
   const { data: items, isLoading: isLoadingItems } = useChamadoItems(chamadoId);
   const updateChamado = useUpdateChamado(chamadoId);
   const addItem = useAddItemToChamado(chamadoId);
+  const { data: users, isLoading: isLoadingUsers } = useUsers();
 
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState<UpdateChamadoDto>({
+  const [formData, setFormData] = useState<UpdateChamadoDto & { id_usuario?: number }>({
     status: undefined,
     observacao: '',
     data_prevista: '',
+    id_usuario: undefined,
   });
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
@@ -69,6 +71,13 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
     setFormData({
       ...formData,
       status: e.target.value as ChamadoStatus,
+    });
+  };
+
+  const handleUserChange = (e: any) => {
+    setFormData({
+      ...formData,
+      id_usuario: e.target.value ? Number(e.target.value) : undefined
     });
   };
 
@@ -204,6 +213,7 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
                   status: chamado.status,
                   observacao: chamado.observacao,
                   data_prevista: chamado.data_prevista,
+                  id_usuario: chamado.id_usuario,
                 });
                 setEditMode(true);
               }}
@@ -246,6 +256,25 @@ const ChamadoDetail: React.FC<ChamadoDetailProps> = ({ chamadoId }) => {
                       shrink: true,
                     }}
                   />
+                </Box>
+                <Box>
+                  <FormControl fullWidth>
+                    <InputLabel id="tecnico-label">Técnico Responsável</InputLabel>
+                    <Select
+                      labelId="tecnico-label"
+                      id="id_usuario"
+                      name="id_usuario"
+                      value={formData.id_usuario || ''}
+                      label="Técnico Responsável"
+                      onChange={handleUserChange}
+                      disabled={isLoadingUsers}
+                    >
+                      <MenuItem value="">Não atribuído</MenuItem>
+                      {users && users.map((user: User) => (
+                        <MenuItem key={user.id_usuario} value={user.id_usuario}>{user.nome} ({user.role})</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Box>
                 <Box sx={{ gridColumn: { xs: '1', md: '1 / span 2' } }}>
                   <TextField

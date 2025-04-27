@@ -21,6 +21,13 @@ export const useChamados = () => {
     });
   };
 
+  const useUsers = () => {
+    return useQuery({
+      queryKey: ['users'],
+      queryFn: () => chamadoApi.getUsers(),
+    });
+  };
+
   const useChamadoDetails = (id: number) => {
     return useQuery({
       queryKey: ['chamado', id],
@@ -104,5 +111,6 @@ export const useChamados = () => {
     useAddItemToChamado,
     useUpdateChamadoItem,
     useDeleteChamadoItem,
+    useUsers,
   };
 }; 

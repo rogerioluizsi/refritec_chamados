@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useChamados } from '../../hooks/useChamados';
-import { CreateChamadoDto, ChamadoStatus } from '../../types';
+import { CreateChamadoDto, ChamadoStatus, User } from '../../types';
 
 interface ChamadoFormProps {
   clienteId: number;
@@ -28,15 +28,17 @@ interface ChamadoData {
 
 const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
   const navigate = useNavigate();
-  const { useCreateChamado } = useChamados();
+  const { useCreateChamado, useUsers } = useChamados();
   const createChamado = useCreateChamado();
+  const { data: users, isLoading: isLoadingUsers } = useUsers();
 
-  const [formData, setFormData] = useState<ChamadoData>({
+  const [formData, setFormData] = useState<ChamadoData & { id_usuario?: number }>({
     descricao: '',
     aparelho: '',
     status: 'Aberto',
     observacao: '',
     data_prevista: null,
+    id_usuario: undefined,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -58,6 +60,13 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
     setFormData(prev => ({
       ...prev,
       data_prevista: date
+    }));
+  };
+
+  const handleUserChange = (e: any) => {
+    setFormData(prev => ({
+      ...prev,
+      id_usuario: e.target.value ? Number(e.target.value) : undefined
     }));
   };
 
@@ -135,6 +144,26 @@ const ChamadoForm: React.FC<ChamadoFormProps> = ({ clienteId }) => {
                 shrink: true,
               }}
             />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel id="tecnico-label">Técnico Responsável</InputLabel>
+              <Select
+                labelId="tecnico-label"
+                id="id_usuario"
+                name="id_usuario"
+                value={formData.id_usuario || ''}
+                label="Técnico Responsável"
+                onChange={handleUserChange}
+                disabled={isLoadingUsers}
+              >
+                <MenuItem value="">Não atribuído</MenuItem>
+                {users && users.map((user: User) => (
+                  <MenuItem key={user.id_usuario} value={user.id_usuario}>{user.nome} ({user.role})</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
 
           <Grid item xs={12}>
