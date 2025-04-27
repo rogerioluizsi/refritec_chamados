@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import os
 
 from ..database import get_db
-from ..models import Chamado, Cliente, ItemChamado, HistoricoAlteracaoChamado
+from ..models import Chamado, Cliente, ItemChamado, HistoricoAlteracaoChamado, Usuario, RoleEnum
 from ..schemas import (
     Chamado as ChamadoSchema,
     ChamadoCreate,
@@ -37,12 +37,25 @@ def verify_api_key(x_api_key: str = Header(..., description="API Key for authent
         )
     return x_api_key
 
+# Dependency to get current user's role
+def get_current_user_role(
+    x_api_key: str = Depends(verify_api_key),
+    x_user_role: str = Header(..., description="User role for authorization", alias="X-User-Role")
+):
+    if x_user_role not in [role.value for role in RoleEnum]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid user role"
+        )
+    return x_user_role
+
 router = APIRouter(
     prefix="/api/chamados",
     tags=["chamados"],
     responses={
         404: {"description": "Chamado não encontrado"},
-        401: {"description": "API Key inválida"}
+        401: {"description": "API Key inválida"},
+        403: {"description": "Acesso não autorizado"}
     },
     dependencies=[Depends(verify_api_key)]  # Apply API key verification to all routes
 )
@@ -67,6 +80,16 @@ def get_cliente_or_404(db: Session, id_cliente: int):
             detail=f"Cliente com ID {id_cliente} não encontrado"
         )
     return cliente
+
+# Função auxiliar para verificar se um usuário existe
+def get_usuario_or_404(db: Session, id_usuario: int):
+    usuario = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuário com ID {id_usuario} não encontrado"
+        )
+    return usuario
 
 # Função auxiliar para verificar se um chamado existe
 def get_chamado_or_404(db: Session, id_chamado: int):
@@ -173,6 +196,7 @@ def create_chamado(chamado: ChamadoCreate, db: Session = Depends(get_db)):
     Cria um novo chamado para um cliente existente.
     
     - **id_cliente**: ID do cliente (deve existir)
+    - **id_usuario**: ID do técnico responsável (opcional)
     - **descricao**: Descrição do problema
     - **aparelho**: Qual eletrodoméstico está com problema
     - **status**: Situação do chamado (padrão: 'Aberto')
@@ -183,10 +207,15 @@ def create_chamado(chamado: ChamadoCreate, db: Session = Depends(get_db)):
     # Verificar se o cliente existe
     get_cliente_or_404(db, chamado.id_cliente)
     
+    # Verificar se o técnico existe, se foi fornecido
+    if chamado.id_usuario:
+        get_usuario_or_404(db, chamado.id_usuario)
+    
     # Criar novo chamado
     try:
         db_chamado = Chamado(
             id_cliente=chamado.id_cliente,
+            id_usuario=chamado.id_usuario,
             descricao=chamado.descricao,
             aparelho=chamado.aparelho,
             status=chamado.status,
@@ -213,23 +242,34 @@ def list_chamados(
     per_page: int = Query(10, ge=1, le=100, description="Itens por página"),
     status: Optional[str] = Query(None, description="Filtrar por status"),
     id_cliente: Optional[int] = Query(None, description="Filtrar por cliente"),
+    id_usuario: Optional[int] = Query(None, description="Filtrar por técnico"),
     data_inicio: Optional[date] = Query(None, description="Filtrar por data de abertura (início)"),
     data_fim: Optional[date] = Query(None, description="Filtrar por data de abertura (fim)"),
     data_conclusao_inicio: Optional[date] = Query(None, description="Filtrar por data de conclusão (início)"),
     data_conclusao_fim: Optional[date] = Query(None, description="Filtrar por data de conclusão (fim)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Lista todos os chamados com suporte a paginação e filtros.
+    - Administradores e gerentes podem ver todos os chamados
+    - Funcionários só podem ver seus próprios chamados
     """
     # Construir a query base
-    query = db.query(Chamado).options(joinedload(Chamado.cliente))
+    query = db.query(Chamado).options(joinedload(Chamado.cliente), joinedload(Chamado.tecnico))
     
-    # Aplicar filtros se fornecidos
+    # Aplicar filtros baseados no papel do usuário
+    if current_user_role == RoleEnum.FUNCIONARIO.value:
+        query = query.filter(Chamado.id_usuario == current_user_id)
+    
+    # Aplicar filtros adicionais se fornecidos
     if status:
         query = query.filter(Chamado.status == status)
     if id_cliente:
         query = query.filter(Chamado.id_cliente == id_cliente)
+    if id_usuario:
+        query = query.filter(Chamado.id_usuario == id_usuario)
     if data_inicio:
         query = query.filter(Chamado.data_abertura >= data_inicio)
     if data_fim:
@@ -256,16 +296,34 @@ def list_chamados(
     }
 
 @router.get("/{id_chamado}", response_model=ChamadoDetail)
-def get_chamado(id_chamado: int = Path(..., description="ID do chamado"), db: Session = Depends(get_db)):
+def get_chamado(
+    id_chamado: int = Path(..., description="ID do chamado"),
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
+):
     """
     Obtém detalhes de um chamado específico, incluindo seus itens e valor total.
+    - Administradores e gerentes podem ver qualquer chamado
+    - Funcionários só podem ver seus próprios chamados
     """
     # Buscar o chamado com itens relacionados
-    chamado = db.query(Chamado).filter(Chamado.id_chamado == id_chamado).first()
+    chamado = db.query(Chamado).options(
+        joinedload(Chamado.cliente),
+        joinedload(Chamado.tecnico)
+    ).filter(Chamado.id_chamado == id_chamado).first()
+    
     if not chamado:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Chamado com ID {id_chamado} não encontrado"
+        )
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para acessar este chamado"
         )
     
     # Calcular o valor total dos itens
@@ -275,6 +333,7 @@ def get_chamado(id_chamado: int = Path(..., description="ID do chamado"), db: Se
     response = dict(
         id_chamado=chamado.id_chamado,
         id_cliente=chamado.id_cliente,
+        id_usuario=chamado.id_usuario,
         descricao=chamado.descricao,
         aparelho=chamado.aparelho,
         status=chamado.status,
@@ -285,6 +344,7 @@ def get_chamado(id_chamado: int = Path(..., description="ID do chamado"), db: Se
         data_conclusao=chamado.data_conclusao,
         itens=chamado.itens,
         cliente=chamado.cliente,
+        tecnico=chamado.tecnico,
         valor_total=valor_total
     )
     
@@ -302,7 +362,38 @@ def get_chamados_by_cliente(
     get_cliente_or_404(db, id_cliente)
     
     # Buscar os chamados do cliente
-    chamados = db.query(Chamado).filter(Chamado.id_cliente == id_cliente).order_by(Chamado.data_abertura.desc()).all()
+    chamados = db.query(Chamado).options(
+        joinedload(Chamado.tecnico)
+    ).filter(Chamado.id_cliente == id_cliente).order_by(Chamado.data_abertura.desc()).all()
+    
+    return chamados
+
+@router.get("/tecnico/{id_usuario}", response_model=List[ChamadoSchema])
+def get_chamados_by_tecnico(
+    id_usuario: int = Path(..., description="ID do técnico"),
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
+):
+    """
+    Lista todos os chamados atribuídos a um técnico específico.
+    - Administradores e gerentes podem ver chamados de qualquer técnico
+    - Funcionários só podem ver seus próprios chamados
+    """
+    # Verificar se o usuário existe
+    get_usuario_or_404(db, id_usuario)
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para ver chamados de outros técnicos"
+        )
+    
+    # Buscar os chamados do técnico
+    chamados = db.query(Chamado).options(
+        joinedload(Chamado.cliente)
+    ).filter(Chamado.id_usuario == id_usuario).order_by(Chamado.data_abertura.desc()).all()
     
     return chamados
 
@@ -310,16 +401,32 @@ def get_chamados_by_cliente(
 def update_chamado(
     id_chamado: int,
     chamado_update: ChamadoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Atualiza um chamado existente.
     
     - Apenas os campos fornecidos serão atualizados
     - Alterações são registradas no histórico
+    - O id_usuario pode ser atualizado para atribuir o chamado a um técnico diferente
+    - Funcionários só podem atualizar seus próprios chamados
+    - Administradores e gerentes podem atualizar qualquer chamado
     """
     # Buscar o chamado pelo ID
     db_chamado = get_chamado_or_404(db, id_chamado)
+    
+    # Verificar permissão de atualização
+    if current_user_role == RoleEnum.FUNCIONARIO.value and db_chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para atualizar este chamado"
+        )
+    
+    # Verificar se o técnico existe, se foi fornecido
+    if chamado_update.id_usuario is not None:
+        get_usuario_or_404(db, chamado_update.id_usuario)
     
     # Atualizar os campos fornecidos e registrar alterações no histórico
     update_data = chamado_update.dict(exclude_unset=True)
@@ -374,13 +481,24 @@ def delete_chamado(id_chamado: int, db: Session = Depends(get_db)):
 def create_item_chamado(
     id_chamado: int,
     item: ItemChamadoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Adiciona um novo item de custo a um chamado existente.
+    - Administradores e gerentes podem adicionar itens a qualquer chamado
+    - Funcionários só podem adicionar itens aos seus próprios chamados
     """
     # Verificar se o chamado existe
     db_chamado = get_chamado_or_404(db, id_chamado)
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and db_chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para adicionar itens a este chamado"
+        )
     
     # Verificar se o chamado não está cancelado
     if db_chamado.status == "Cancelado":
@@ -421,13 +539,24 @@ def create_item_chamado(
 @router.get("/{id_chamado}/itens", response_model=List[ItemChamadoSchema])
 def list_itens_chamado(
     id_chamado: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Lista todos os itens de custo de um chamado específico.
+    - Administradores e gerentes podem ver itens de qualquer chamado
+    - Funcionários só podem ver itens dos seus próprios chamados
     """
     # Verificar se o chamado existe
-    get_chamado_or_404(db, id_chamado)
+    db_chamado = get_chamado_or_404(db, id_chamado)
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and db_chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para ver itens deste chamado"
+        )
     
     # Buscar os itens do chamado
     itens = db.query(ItemChamado).filter(ItemChamado.id_chamado == id_chamado).all()
@@ -438,16 +567,27 @@ def list_itens_chamado(
 def update_item_chamado(
     id_item_chamado: int,
     item_update: ItemChamadoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Atualiza um item de custo específico.
+    - Administradores e gerentes podem atualizar itens de qualquer chamado
+    - Funcionários só podem atualizar itens dos seus próprios chamados
     """
     # Buscar o item pelo ID
     db_item = get_item_chamado_or_404(db, id_item_chamado)
     
     # Buscar o chamado associado
     db_chamado = get_chamado_or_404(db, db_item.id_chamado)
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and db_chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para atualizar itens deste chamado"
+        )
     
     # Verificar se o chamado não está cancelado
     if db_chamado.status == "Cancelado":
@@ -483,16 +623,27 @@ def update_item_chamado(
 @router.delete("/itens/{id_item_chamado}", status_code=status.HTTP_200_OK)
 def delete_item_chamado(
     id_item_chamado: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Remove um item de custo de um chamado.
+    - Administradores e gerentes podem remover itens de qualquer chamado
+    - Funcionários só podem remover itens dos seus próprios chamados
     """
     # Buscar o item pelo ID
     db_item = get_item_chamado_or_404(db, id_item_chamado)
     
     # Buscar o chamado associado
     db_chamado = get_chamado_or_404(db, db_item.id_chamado)
+    
+    # Verificar permissão de acesso
+    if current_user_role == RoleEnum.FUNCIONARIO.value and db_chamado.id_usuario != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para remover itens deste chamado"
+        )
     
     # Verificar se o chamado não está cancelado
     if db_chamado.status == "Cancelado":
@@ -527,10 +678,14 @@ def delete_item_chamado(
 @router.get("/calendar/week", response_model=Dict[str, List[ChamadoSchema]])
 def get_chamados_by_week(
     start_date: Optional[date] = Query(None, description="Data inicial da semana"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Retorna os chamados agrupados por dia da semana.
+    - Administradores e gerentes podem ver chamados de qualquer técnico
+    - Funcionários só podem ver seus próprios chamados
     Se start_date não for fornecida, usa a data atual como início da semana.
     """
     if not start_date:
@@ -542,11 +697,21 @@ def get_chamados_by_week(
     # Calcula o fim da semana (domingo)
     end_date = start_date + timedelta(days=6)
     
-    # Busca os chamados da semana
-    chamados = db.query(Chamado).filter(
+    # Construir a query base
+    query = db.query(Chamado).options(
+        joinedload(Chamado.cliente),
+        joinedload(Chamado.tecnico)
+    ).filter(
         func.date(Chamado.data_abertura) >= start_date,
         func.date(Chamado.data_abertura) <= end_date
-    ).order_by(Chamado.data_abertura).all()
+    )
+    
+    # Aplicar filtro baseado no papel do usuário
+    if current_user_role == RoleEnum.FUNCIONARIO.value:
+        query = query.filter(Chamado.id_usuario == current_user_id)
+    
+    # Busca os chamados da semana
+    chamados = query.order_by(Chamado.data_abertura).all()
     
     # Agrupa os chamados por dia
     chamados_by_day = {}
@@ -563,18 +728,32 @@ def get_chamados_by_week(
 @router.get("/calendar/day", response_model=List[ChamadoSchema])
 def get_chamados_by_day(
     date: Optional[date] = Query(None, description="Data específica para busca de chamados"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_role: str = Depends(get_current_user_role),
+    current_user_id: int = Header(..., description="Current user ID")
 ):
     """
     Retorna os chamados para um dia específico.
+    - Administradores e gerentes podem ver chamados de qualquer técnico
+    - Funcionários só podem ver seus próprios chamados
     Se date não for fornecida, usa a data atual.
     """
     if not date:
         date = datetime.now().date()
     
-    # Busca os chamados do dia pela data_prevista em vez de data_abertura
-    chamados = db.query(Chamado).filter(
+    # Construir a query base
+    query = db.query(Chamado).options(
+        joinedload(Chamado.cliente),
+        joinedload(Chamado.tecnico)
+    ).filter(
         Chamado.data_prevista == date
-    ).order_by(Chamado.data_abertura).all()
+    )
+    
+    # Aplicar filtro baseado no papel do usuário
+    if current_user_role == RoleEnum.FUNCIONARIO.value:
+        query = query.filter(Chamado.id_usuario == current_user_id)
+    
+    # Busca os chamados do dia
+    chamados = query.order_by(Chamado.data_abertura).all()
     
     return chamados 

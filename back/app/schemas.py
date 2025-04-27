@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, ForwardRef
 from datetime import datetime, date
 
 # Esquemas para Cliente
@@ -73,9 +73,13 @@ class ItemChamado(ItemChamadoBase):
     def valor_total(self) -> float:
         return self.quantidade * self.valor_unitario
 
+# Create a forward reference for Usuario
+UsuarioRef = ForwardRef('Usuario')
+
 # Esquemas para Chamado
 class ChamadoBase(BaseModel):
     id_cliente: int = Field(..., example=1)
+    id_usuario: Optional[int] = Field(None, example=1, description="ID do técnico responsável")
     descricao: str = Field(..., min_length=5, example="Geladeira não gela")
     aparelho: str = Field(..., min_length=2, example="Geladeira Brastemp")
     status: str = Field("Aberto", example="Aberto")
@@ -89,6 +93,7 @@ class ChamadoCreate(ChamadoBase):
 
 class ChamadoUpdate(BaseModel):
     """Esquema para atualização de chamado"""
+    id_usuario: Optional[int] = Field(None, example=1, description="ID do técnico responsável")
     descricao: Optional[str] = Field(None, min_length=5, example="Geladeira não gela - atualizado")
     aparelho: Optional[str] = Field(None, min_length=2, example="Geladeira Brastemp Frost Free")
     status: Optional[str] = Field(None, example="Em Análise")
@@ -103,6 +108,7 @@ class Chamado(ChamadoBase):
     valor: float
     data_abertura: datetime
     cliente: Optional[Cliente] = None
+    tecnico: Optional[UsuarioRef] = None
     
     class Config:
         orm_mode = True
@@ -112,6 +118,7 @@ class ChamadoDetail(Chamado):
     """Esquema detalhado de chamado com itens"""
     itens: List[ItemChamado] = []
     cliente: Optional[Cliente] = None
+    tecnico: Optional[UsuarioRef] = None
     valor_total: Optional[float] = None
     
     class Config:
@@ -145,4 +152,8 @@ class Usuario(UsuarioBase):
     
     class Config:
         orm_mode = True
-        from_attributes = True 
+        from_attributes = True
+
+# Update forward references
+Chamado.update_forward_refs()
+ChamadoDetail.update_forward_refs() 

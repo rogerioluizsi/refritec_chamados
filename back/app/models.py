@@ -1,7 +1,13 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Numeric, Date
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Numeric, Date, Boolean, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import enum
 from .database import Base
+
+class RoleEnum(str, enum.Enum):
+    ADMINISTRADOR = "administrador"
+    GERENTE = "gerente"
+    FUNCIONARIO = "funcionario"
 
 class Usuario(Base):
     """Modelo para a tabela de Usuários"""
@@ -11,9 +17,15 @@ class Usuario(Base):
     nome = Column(String(100), nullable=False)
     username = Column(String(50), unique=True, nullable=False, index=True)
     senha = Column(String(100), nullable=False)
+    role = Column(String(20), nullable=False, default=RoleEnum.FUNCIONARIO)
+    data_criacao = Column(DateTime, default=func.now())
+    ativo = Column(Boolean, default=True)
+    
+    # Add relationship to chamados
+    chamados = relationship("Chamado", back_populates="tecnico")
     
     def __repr__(self):
-        return f"<Usuario(id={self.id_usuario}, nome={self.nome}, username={self.username})>"
+        return f"<Usuario(id={self.id_usuario}, nome={self.nome}, username={self.username}, role={self.role})>"
 
 class Cliente(Base):
     """Modelo para a tabela Cliente"""
@@ -36,6 +48,7 @@ class Chamado(Base):
     
     id_chamado = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_cliente = Column(Integer, ForeignKey("Cliente.id_cliente"), nullable=False)
+    id_usuario = Column(Integer, ForeignKey("Usuario.id_usuario"), nullable=True)
     descricao = Column(Text, nullable=False)
     aparelho = Column(String(100), nullable=False)
     status = Column(String(50), nullable=False, default="Aberto")
@@ -47,11 +60,12 @@ class Chamado(Base):
     
     # Relacionamentos
     cliente = relationship("Cliente", back_populates="chamados")
+    tecnico = relationship("Usuario", back_populates="chamados")
     itens = relationship("ItemChamado", back_populates="chamado", cascade="all, delete-orphan")
     historico = relationship("HistoricoAlteracaoChamado", back_populates="chamado", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Chamado(id={self.id_chamado}, cliente_id={self.id_cliente}, status={self.status})>"
+        return f"<Chamado(id={self.id_chamado}, cliente_id={self.id_cliente}, tecnico_id={self.id_usuario}, status={self.status})>"
 
 class ItemChamado(Base):
     """Modelo para a tabela Itens_Chamado"""
