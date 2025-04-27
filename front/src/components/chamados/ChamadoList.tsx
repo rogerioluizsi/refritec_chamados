@@ -8,12 +8,13 @@ interface ChamadoListProps {
   status?: ChamadoStatus;
   clienteId?: number;
   searchTerm?: string;
+  tecnicoId?: number;
 }
 
-const ChamadoList: React.FC<ChamadoListProps> = ({ status = 'Aberto', clienteId, searchTerm = '' }) => {
+const ChamadoList: React.FC<ChamadoListProps> = ({ status = 'Aberto', clienteId, searchTerm = '', tecnicoId }) => {
   const [page, setPage] = useState(1);
   const { useListChamados } = useChamados();
-  const { data, isLoading, error } = useListChamados(page, 10, status, clienteId);
+  const { data, isLoading, error } = useListChamados(page, 10, status, clienteId, tecnicoId);
 
   const filteredChamados = useMemo(() => {
     if (!data?.items) return [];

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography, Paper, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Card, CardContent, Typography, Paper, IconButton, useMediaQuery, useTheme, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { format, addDays, isToday, isSunday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -7,6 +7,7 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { chamadoApi } from '../api/chamadoApi';
 import { Chamado } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { useChamados } from '../hooks/useChamados';
 
 export const Calendar: React.FC = () => {
   const [chamados, setChamados] = useState<Chamado[]>([]);
@@ -15,6 +16,30 @@ export const Calendar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
+
+  // Técnico filter state
+  const [selectedTecnico, setSelectedTecnico] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('');
+
+  // Get user role from localStorage
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+      } catch {}
+    }
+  }, []);
+
+  // Fetch users (técnicos)
+  const { useUsers } = useChamados();
+  const { data: users, isLoading: isLoadingUsers } = useUsers();
+  const tecnicos = users?.filter((u) => u.ativo);
+
+  const handleTecnicoChange = (event: SelectChangeEvent<string>) => {
+    setSelectedTecnico(event.target.value);
+  };
 
   const navigateDay = (direction: number) => {
     let newDate = addDays(currentDate, direction);
@@ -60,8 +85,35 @@ export const Calendar: React.FC = () => {
     }
   };
 
+  // Filter chamados by técnico if selected
+  const filteredChamados = React.useMemo(() => {
+    if (!selectedTecnico) return chamados;
+    return chamados.filter((c) => String(c.id_usuario) === selectedTecnico);
+  }, [chamados, selectedTecnico]);
+
   return (
     <Box sx={{ p: isMobile ? 2 : 3, maxWidth: '100%' }}>
+      {/* Técnico filter for gerente/administrador */}
+      {(userRole === 'gerente' || userRole === 'administrador') && (
+        <Box mb={2}>
+          <FormControl fullWidth variant="outlined" size="small" disabled={isLoadingUsers}>
+            <InputLabel id="tecnico-select-label">Filtrar por Técnico</InputLabel>
+            <Select
+              labelId="tecnico-select-label"
+              value={selectedTecnico}
+              onChange={handleTecnicoChange}
+              label="Filtrar por Técnico"
+            >
+              <MenuItem value="">Todos os Técnicos</MenuItem>
+              {tecnicos && tecnicos.map((tecnico) => (
+                <MenuItem key={tecnico.id_usuario} value={String(tecnico.id_usuario)}>
+                  {tecnico.nome}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -119,7 +171,7 @@ export const Calendar: React.FC = () => {
               Carregando...
             </Typography>
           </Box>
-        ) : chamados.length === 0 ? (
+        ) : filteredChamados.length === 0 ? (
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'center', 
@@ -132,7 +184,7 @@ export const Calendar: React.FC = () => {
             </Typography>
           </Box>
         ) : (
-          chamados.map((chamado) => (
+          filteredChamados.map((chamado) => (
             <Card 
               key={chamado.id_chamado} 
               sx={{ 

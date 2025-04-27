@@ -14,10 +14,10 @@ export const useChamados = () => {
   const queryClient = useQueryClient();
 
   // Query hooks
-  const useListChamados = (page = 1, perPage = 10, status?: ChamadoStatus, clienteId?: number) => {
+  const useListChamados = (page = 1, perPage = 10, status?: ChamadoStatus, clienteId?: number, tecnicoId?: number) => {
     return useQuery({
-      queryKey: ['chamados', { page, perPage, status, clienteId }],
-      queryFn: () => chamadoApi.listChamados(page, perPage, status, clienteId),
+      queryKey: ['chamados', { page, perPage, status, clienteId, tecnicoId }],
+      queryFn: () => chamadoApi.listChamados(page, perPage, status, clienteId, tecnicoId),
     });
   };
 

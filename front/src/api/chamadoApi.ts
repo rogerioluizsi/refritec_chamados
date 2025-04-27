@@ -35,13 +35,15 @@ export const chamadoApi = {
     page: number = 1,
     per_page: number = 10,
     status?: ChamadoStatus,
-    clienteId?: number
+    clienteId?: number,
+    tecnicoId?: number
   ): Promise<PaginatedResponse<Chamado>> => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('per_page', per_page.toString());
     if (status) params.append('status', status);
     if (clienteId) params.append('id_cliente', clienteId.toString());
+    if (tecnicoId) params.append('id_usuario', tecnicoId.toString());
 
     const response = await api.get<PaginatedResponse<Chamado>>('/api/chamados', { params });
     return response.data;
