@@ -99,4 +99,24 @@ class HistoricoAlteracaoChamado(Base):
     chamado = relationship("Chamado", back_populates="historico")
     
     def __repr__(self):
-        return f"<HistoricoAlteracao(id={self.id_historico}, chamado_id={self.id_chamado}, campo={self.campo_alterado})>" 
+        return f"<HistoricoAlteracao(id={self.id_historico}, chamado_id={self.id_chamado}, campo={self.campo_alterado})>"
+
+class Caixa(Base):
+    """Modelo para a tabela Caixa (Controle de Caixa)"""
+    __tablename__ = "Caixa"
+
+    id_caixa = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    descricao = Column(Text, nullable=False)
+    valor = Column(Numeric(10, 2), nullable=False)
+    tipo = Column(String(10), nullable=False)  # 'entrada' ou 'saida'
+    data_lancamento = Column(Date, nullable=False)
+    mes = Column(Integer, nullable=False)
+    ano = Column(Integer, nullable=False)
+    fechado = Column(Boolean, default=False)
+    id_usuario = Column(Integer, ForeignKey("Usuario.id_usuario"), nullable=True)
+    data_criacao = Column(DateTime, default=func.now())
+
+    usuario = relationship("Usuario")
+
+    def __repr__(self):
+        return f"<Caixa(id={self.id_caixa}, tipo={self.tipo}, valor={self.valor}, mes={self.mes}, ano={self.ano}, fechado={self.fechado})>" 

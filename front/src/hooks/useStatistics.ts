@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/api';
 import { ChamadoStats } from '../types';
 import { QueryKeys } from '../api/queryKeys';
+import { caixaApi } from '../api/chamadoApi';
 
 interface ChamadoStatisticsResponse {
   total_open: number;
@@ -18,12 +19,13 @@ interface ClienteStatisticsResponse {
   total_clientes: number;
 }
 
-// Fetch both chamado and cliente statistics
+// Fetch both chamado, cliente, and caixa statistics
 const fetchChamadoStats = async (): Promise<ChamadoStats> => {
   try {
-    const [chamadoResponse, clienteResponse] = await Promise.all([
+    const [chamadoResponse, clienteResponse, caixaSum] = await Promise.all([
       api.get<ChamadoStatisticsResponse>('/api/chamados/statistics'),
-      api.get<ClienteStatisticsResponse>('/api/clientes/statistics')
+      api.get<ClienteStatisticsResponse>('/api/clientes/statistics'),
+      caixaApi.getCaixaSum()
     ]);
     
     // Combine the responses
@@ -35,7 +37,10 @@ const fetchChamadoStats = async (): Promise<ChamadoStats> => {
       total_value_open: chamadoResponse.data.total_value_open,
       valor_recebido_mes: chamadoResponse.data.valor_recebido_mes,
       chamados_by_client: chamadoResponse.data.chamados_by_client,
-      total_clientes: clienteResponse.data.total_clientes
+      total_clientes: clienteResponse.data.total_clientes,
+      total_entrada: caixaSum.total_entrada,
+      total_saida: caixaSum.total_saida,
+      saldo: caixaSum.saldo,
     };
   } catch (error) {
     console.error('Error fetching statistics:', error);

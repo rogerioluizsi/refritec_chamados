@@ -83,4 +83,14 @@ export const chamadoApi = {
     const response = await api.get<{ users: User[] }>(`/users`);
     return response.data.users;
   },
+};
+
+export const caixaApi = {
+  getCaixaSum: async (mes?: number, ano?: number): Promise<{ total_entrada: number; total_saida: number; saldo: number }> => {
+    const params = new URLSearchParams();
+    if (mes) params.append('mes', mes.toString());
+    if (ano) params.append('ano', ano.toString());
+    const response = await api.get('/api/caixa/sum', { params });
+    return response.data;
+  },
 }; 

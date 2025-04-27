@@ -86,6 +86,10 @@ export interface ChamadoStats {
   valor_recebido_mes: number;
   total_clientes: number;
   chamados_by_client: { [key: string]: number };
+  // Caixa metrics
+  total_entrada?: number;
+  total_saida?: number;
+  saldo?: number;
 }
 
 // User types

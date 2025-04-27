@@ -59,12 +59,28 @@ CREATE TABLE Usuario (
     CHECK (role IN ('administrador', 'gerente', 'funcionario'))
 );
 
+-- Caixa (Cash Control) table
+CREATE TABLE Caixa (
+    id_caixa INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao TEXT NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('entrada', 'saida')),
+    data_lancamento DATE NOT NULL,
+    mes INTEGER NOT NULL,
+    ano INTEGER NOT NULL,
+    fechado BOOLEAN DEFAULT 0,
+    id_usuario INTEGER,
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_chamado_cliente ON Chamado(id_cliente);
 CREATE INDEX idx_chamado_usuario ON Chamado(id_usuario);
 CREATE INDEX idx_historico_chamado ON HistoricoAlteracaoChamado(id_chamado);
 CREATE INDEX idx_item_chamado ON ItemChamado(id_chamado);
 CREATE INDEX idx_usuario_username ON Usuario(username);
+CREATE INDEX idx_caixa_mes_ano ON Caixa(mes, ano);
 
 -- Create a view to calculate total value of service calls based on items
 CREATE VIEW ChamadoValorTotal AS

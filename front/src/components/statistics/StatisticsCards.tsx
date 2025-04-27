@@ -161,6 +161,69 @@ const StatisticsCards: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             height: 140,
+            bgcolor: 'success.main',
+            color: 'white',
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Entradas no Caixa
+          </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" flex={1}>
+            <Typography variant="h3">R$ {stats.total_entrada?.toLocaleString('pt-BR')}</Typography>
+            <MoneyIcon fontSize="large" />
+          </Box>
+        </Paper>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Paper
+          sx={{
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            height: 140,
+            bgcolor: 'error.main',
+            color: 'white',
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Saídas do Caixa
+          </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" flex={1}>
+            <Typography variant="h3">R$ {stats.total_saida?.toLocaleString('pt-BR')}</Typography>
+            <PaymentsIcon fontSize="large" />
+          </Box>
+        </Paper>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Paper
+          sx={{
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            height: 140,
+            bgcolor: 'primary.dark',
+            color: 'white',
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Saldo do Caixa
+          </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" flex={1}>
+            <Typography variant="h3">R$ {stats.saldo?.toLocaleString('pt-BR')}</Typography>
+            <MoneyIcon fontSize="large" />
+          </Box>
+        </Paper>
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={4}>
+        <Paper
+          sx={{
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            height: 140,
             bgcolor: 'secondary.light',
             color: 'white',
           }}

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import os
 
 from ..database import get_db
-from ..models import Chamado, Cliente, ItemChamado, HistoricoAlteracaoChamado, Usuario, RoleEnum
+from ..models import Chamado, Cliente, ItemChamado, HistoricoAlteracaoChamado, Usuario, RoleEnum, Caixa
 from ..schemas import (
     Chamado as ChamadoSchema,
     ChamadoCreate,
@@ -432,12 +432,35 @@ def update_chamado(
     update_data = chamado_update.dict(exclude_unset=True)
     
     try:
+        status_was = db_chamado.status
         for key, value in update_data.items():
             old_value = getattr(db_chamado, key)
             if old_value != value:  # Só registra no histórico se o valor mudou
                 registrar_historico(db, id_chamado, key, old_value, value)
                 setattr(db_chamado, key, value)
-        
+
+        # Se status mudou para 'Concluído' e não era antes, registrar no Caixa
+        if (
+            'status' in update_data and
+            update_data['status'] == 'Concluído' and
+            status_was != 'Concluído'
+        ):
+            # Calcular valor total dos itens do chamado
+            valor_total = calcular_valor_total_itens(db, id_chamado)
+            data_fechamento = db_chamado.data_conclusao or datetime.now()
+            caixa_entry = Caixa(
+                descricao=f"Recebimento chamado #{id_chamado}",
+                valor=valor_total,
+                tipo='entrada',
+                data_lancamento=data_fechamento.date(),
+                mes=data_fechamento.month,
+                ano=data_fechamento.year,
+                fechado=False,
+                id_usuario=db_chamado.id_usuario,
+                data_criacao=datetime.now()
+            )
+            db.add(caixa_entry)
+
         db.commit()
         db.refresh(db_chamado)
         return db_chamado

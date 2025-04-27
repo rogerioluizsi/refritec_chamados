@@ -156,4 +156,36 @@ class Usuario(UsuarioBase):
 
 # Update forward references
 Chamado.update_forward_refs()
-ChamadoDetail.update_forward_refs() 
+ChamadoDetail.update_forward_refs()
+
+# Esquemas para Caixa (Controle de Caixa)
+class CaixaBase(BaseModel):
+    descricao: str = Field(..., example="Recebimento de cliente")
+    valor: float = Field(..., ge=0, example=150.00)
+    tipo: str = Field(..., example="entrada", description="Tipo de lançamento: entrada ou saida")
+    data_lancamento: date = Field(..., example="2024-06-01")
+    mes: int = Field(..., ge=1, le=12, example=6)
+    ano: int = Field(..., ge=2000, example=2024)
+    fechado: Optional[bool] = Field(False, example=False)
+    id_usuario: Optional[int] = Field(None, example=1)
+
+class CaixaCreate(CaixaBase):
+    pass
+
+class CaixaUpdate(BaseModel):
+    descricao: Optional[str] = Field(None, example="Pagamento de fornecedor")
+    valor: Optional[float] = Field(None, ge=0, example=100.00)
+    tipo: Optional[str] = Field(None, example="saida")
+    data_lancamento: Optional[date] = Field(None, example="2024-06-02")
+    mes: Optional[int] = Field(None, ge=1, le=12, example=6)
+    ano: Optional[int] = Field(None, ge=2000, example=2024)
+    fechado: Optional[bool] = Field(None, example=True)
+    id_usuario: Optional[int] = Field(None, example=1)
+
+class Caixa(CaixaBase):
+    id_caixa: int
+    data_criacao: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True 

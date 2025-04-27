@@ -21,6 +21,10 @@ import EstatisticasPage from './pages/EstatisticasPage';
 import ChamadoCriarPage from './pages/ChamadoCriarPage';
 import ClienteEditarPage from './pages/ClienteEditarPage';
 import UsuariosPage from './pages/UsuariosPage';
+import CaixaPage from './pages/CaixaPage';
+import CaixaAddPage from './pages/CaixaAddPage';
+import CaixaDetailPage from './pages/CaixaDetailPage';
+import CaixaFecharPage from './pages/CaixaFecharPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -55,6 +59,10 @@ function App() {
                 <Route path="/estatisticas" element={<Layout><EstatisticasPage /></Layout>} />
                 <Route path="/calendario" element={<Layout><Calendar /></Layout>} />
                 <Route path="/usuarios" element={<Layout><UsuariosPage /></Layout>} />
+                <Route path="/caixa" element={<Layout><CaixaPage /></Layout>} />
+                <Route path="/caixa/adicionar" element={<Layout><CaixaAddPage /></Layout>} />
+                <Route path="/caixa/:id" element={<Layout><CaixaDetailPage /></Layout>} />
+                <Route path="/caixa/fechar" element={<Layout><CaixaFecharPage /></Layout>} />
               </Route>
             </Routes>
           </Router>

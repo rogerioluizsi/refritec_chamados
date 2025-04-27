@@ -53,10 +53,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [clientesOpen, setClientesOpen] = useState(false);
+  const [gestaoOpen, setGestaoOpen] = useState(false);
   const { logout, user } = useUser();
   
   const handleClientesClick = () => {
     setClientesOpen(!clientesOpen);
+  };
+
+  const handleGestaoClick = () => {
+    setGestaoOpen(!gestaoOpen);
   };
 
   const handleNavigation = (path: string) => {
@@ -153,33 +158,53 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
             <ListItemText primary="Calendário" />
           </ListItemButton>
         </ListItem>
-        
-        <ListItem disablePadding>
-          <ListItemButton 
-            selected={location.pathname === '/estatisticas'}
-            onClick={() => handleNavigation('/estatisticas')}
-          >
-            <ListItemIcon>
-              <BarChartIcon />
-            </ListItemIcon>
-            <ListItemText primary="Estatísticas" />
-          </ListItemButton>
-        </ListItem>
       </List>
-      {/* Usuários (User Management) - only for admin/gerente */}
+      {/* Gestão (Management) - only for admin/gerente */}
       {user && (user.role === 'administrador' || user.role === 'gerente') && (
         <List>
           <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/usuarios'}
-              onClick={() => handleNavigation('/usuarios')}
-            >
+            <ListItemButton onClick={handleGestaoClick}>
               <ListItemIcon>
                 <SupervisorAccountIcon />
               </ListItemIcon>
-              <ListItemText primary="Usuários" />
+              <ListItemText primary="Gestão" />
+              {gestaoOpen ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
           </ListItem>
+          <Collapse in={gestaoOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              <ListItemButton
+                sx={{ pl: 4 }}
+                selected={location.pathname === '/usuarios'}
+                onClick={() => handleNavigation('/usuarios')}
+              >
+                <ListItemIcon>
+                  <SupervisorAccountIcon />
+                </ListItemIcon>
+                <ListItemText primary="Usuários" />
+              </ListItemButton>
+              <ListItemButton
+                sx={{ pl: 4 }}
+                selected={location.pathname === '/caixa'}
+                onClick={() => handleNavigation('/caixa')}
+              >
+                <ListItemIcon>
+                  <BarChartIcon />
+                </ListItemIcon>
+                <ListItemText primary="Caixa" />
+              </ListItemButton>
+              <ListItemButton
+                sx={{ pl: 4 }}
+                selected={location.pathname === '/estatisticas'}
+                onClick={() => handleNavigation('/estatisticas')}
+              >
+                <ListItemIcon>
+                  <BarChartIcon />
+                </ListItemIcon>
+                <ListItemText primary="Estatísticas" />
+              </ListItemButton>
+            </List>
+          </Collapse>
         </List>
       )}
       <Box sx={{ flexGrow: 1 }} />

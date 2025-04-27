@@ -69,7 +69,7 @@ const ClienteSearch: React.FC = () => {
     <Box>
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" component="h2" gutterBottom>
-          Buscar Cliente
+          {/* Buscar Cliente */}
         </Typography>
         
         <Box>

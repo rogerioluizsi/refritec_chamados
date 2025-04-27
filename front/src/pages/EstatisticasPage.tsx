@@ -3,8 +3,24 @@ import { Box, Typography, Grid } from '@mui/material';
 import StatisticsCards from '../components/statistics/StatisticsCards';
 import ClienteChart from '../components/statistics/ClienteChart';
 import StatusChart from '../components/statistics/StatusChart';
+import { useUser } from '../contexts/UserContext';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const EstatisticasPage: React.FC = () => {
+  const { user } = useUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user || (user.role !== 'administrador' && user.role !== 'gerente')) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  if (!user || (user.role !== 'administrador' && user.role !== 'gerente')) {
+    return null;
+  }
+
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>

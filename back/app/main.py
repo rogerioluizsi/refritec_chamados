@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import cliente_routes, chamado_routes, auth_routes
+from .routers import cliente_routes, chamado_routes, auth_routes, caixa_routes
 from .database import engine, Base
 
 # Create database tables
@@ -30,6 +30,7 @@ app.add_middleware(
 app.include_router(cliente_routes.router)
 app.include_router(chamado_routes.router)
 app.include_router(auth_routes.router)
+app.include_router(caixa_routes.router)
 
 # Root route
 @app.get("/")
