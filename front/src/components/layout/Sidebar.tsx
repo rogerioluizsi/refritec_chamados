@@ -27,6 +27,8 @@ import {
   CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useUser } from '../../contexts/UserContext';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 const DRAWER_WIDTH = 240;
 
@@ -50,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [clientesOpen, setClientesOpen] = useState(false);
+  const { logout } = useUser();
   
   const handleClientesClick = () => {
     setClientesOpen(!clientesOpen);
@@ -60,6 +63,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
     if (isMobile) {
       toggleDrawer();
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -154,6 +162,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
               <BarChartIcon />
             </ListItemIcon>
             <ListItemText primary="Estatísticas" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+      <Box sx={{ flexGrow: 1 }} />
+      <Divider />
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleLogout}>
+            <ListItemIcon>
+              <ExitToAppIcon />
+            </ListItemIcon>
+            <ListItemText primary="Sair" />
           </ListItemButton>
         </ListItem>
       </List>

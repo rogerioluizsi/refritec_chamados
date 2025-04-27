@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Container, Paper } from '@mui/material';
 import { authService } from '../services/authService';
+import { useUser } from '../contexts/UserContext';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,8 +20,9 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const success = await authService.login({ username, password });
-    if (success) {
+    const user = await authService.login({ username, password });
+    if (user) {
+      login(user);
       navigate('/');
     } else {
       setError('Nome de usuário ou senha incorretos');

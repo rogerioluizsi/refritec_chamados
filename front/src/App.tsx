@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { UserProvider } from './contexts/UserContext';
 
 import Layout from './components/layout/Layout';
 import theme from './theme/theme';
@@ -32,30 +33,32 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-          <Routes>
-            {/* Public route */}
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Layout><HomePage /></Layout>} />
-              <Route path="/chamados/:id" element={<Layout><ChamadoDetailPage /></Layout>} />
-              <Route path="/chamados/criar" element={<Layout><ChamadoCriarPage /></Layout>} />
-              <Route path="/clientes/criar" element={<Layout><ClienteCriarPage /></Layout>} />
-              <Route path="/clientes/buscar" element={<Layout><ClienteBuscarPage /></Layout>} />
-              <Route path="/clientes/editar/:id" element={<Layout><ClienteEditarPage /></Layout>} />
-              <Route path="/clientes/:id" element={<Layout><ClienteDetailPage /></Layout>} />
-              <Route path="/estatisticas" element={<Layout><EstatisticasPage /></Layout>} />
-              <Route path="/calendario" element={<Layout><Calendar /></Layout>} />
-            </Route>
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <UserProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Router>
+            <Routes>
+              {/* Public route */}
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Layout><HomePage /></Layout>} />
+                <Route path="/chamados/:id" element={<Layout><ChamadoDetailPage /></Layout>} />
+                <Route path="/chamados/criar" element={<Layout><ChamadoCriarPage /></Layout>} />
+                <Route path="/clientes/criar" element={<Layout><ClienteCriarPage /></Layout>} />
+                <Route path="/clientes/buscar" element={<Layout><ClienteBuscarPage /></Layout>} />
+                <Route path="/clientes/editar/:id" element={<Layout><ClienteEditarPage /></Layout>} />
+                <Route path="/clientes/:id" element={<Layout><ClienteDetailPage /></Layout>} />
+                <Route path="/estatisticas" element={<Layout><EstatisticasPage /></Layout>} />
+                <Route path="/calendario" element={<Layout><Calendar /></Layout>} />
+              </Route>
+            </Routes>
+          </Router>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </UserProvider>
   );
 }
 

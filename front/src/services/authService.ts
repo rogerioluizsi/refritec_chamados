@@ -5,30 +5,41 @@ interface LoginCredentials {
   password: string;
 }
 
-// Simple token for authentication
-const TOKEN_KEY = 'auth_token';
+interface User {
+  username: string;
+  role: string;
+}
 
 export const authService = {
-  login: async (credentials: LoginCredentials): Promise<boolean> => {
+  login: async (credentials: LoginCredentials): Promise<User | null> => {
     try {
       const response = await api.post('/login', credentials);
-      if (response.status === 200) {
-        // Store a simple token in localStorage
-        localStorage.setItem(TOKEN_KEY, 'authenticated');
-        return true;
+      if (response.status === 200 && response.data) {
+        // Store user info in localStorage
+        const user: User = {
+          username: credentials.username,
+          role: response.data.role,
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+        return user;
       }
-      return false;
+      return null;
     } catch (error) {
       console.error('Login failed:', error);
-      return false;
+      return null;
     }
   },
 
   logout: (): void => {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('user');
+  },
+
+  getUser: (): User | null => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
   },
 
   isAuthenticated: (): boolean => {
-    return localStorage.getItem(TOKEN_KEY) === 'authenticated';
+    return !!localStorage.getItem('user');
   }
 }; 
