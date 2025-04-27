@@ -19,7 +19,7 @@ const HomePage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        Gerenciar Chamados
+        {/* Gerenciar Chamados */}
       </Typography>
 
       <Box mb={2}>

@@ -20,12 +20,14 @@ export const clienteApi = {
   listClientes: async (
     page: number = 1,
     per_page: number = 10,
+    search?: string,
     nome?: string,
     telefone?: string
   ): Promise<PaginatedResponse<Cliente>> => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('per_page', per_page.toString());
+    if (search) params.append('search', search);
     if (nome) params.append('nome', nome);
     if (telefone) params.append('telefone', telefone);
 

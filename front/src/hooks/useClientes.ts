@@ -6,10 +6,10 @@ export const useClientes = () => {
   const queryClient = useQueryClient();
 
   // Query hooks
-  const useListClientes = (page = 1, perPage = 10, nome?: string, telefone?: string) => {
+  const useListClientes = (page = 1, perPage = 10, search?: string, nome?: string, telefone?: string) => {
     return useQuery({
-      queryKey: ['clientes', { page, perPage, nome, telefone }],
-      queryFn: () => clienteApi.listClientes(page, perPage, nome, telefone),
+      queryKey: ['clientes', { page, perPage, search, nome, telefone }],
+      queryFn: () => clienteApi.listClientes(page, perPage, search, nome, telefone),
     });
   };
 

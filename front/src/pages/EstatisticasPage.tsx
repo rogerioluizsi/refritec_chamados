@@ -8,7 +8,7 @@ const EstatisticasPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        Estatísticas
+        {/* Estatísticas */}
       </Typography>
       
       <StatisticsCards />

@@ -118,21 +118,34 @@ def get_cliente(id_cliente: int, db: Session = Depends(get_db)):
 def list_clientes(
     page: int = Query(1, ge=1, description="Número da página"),
     per_page: int = Query(10, ge=1, le=100, description="Itens por página"),
+    search: Optional[str] = Query(None, description="Filtrar por nome ou telefone"),
     nome: Optional[str] = Query(None, description="Filtrar por nome"),
     telefone: Optional[str] = Query(None, description="Filtrar por telefone"),
     db: Session = Depends(get_db)
 ):
     """
     Lista todos os clientes com suporte a paginação e filtros.
+    
+    Pode filtrar usando:
+    - search: Busca unificada por nome OU telefone
+    - nome: Filtro específico por nome
+    - telefone: Filtro específico por telefone
     """
     # Construir a query base
     query = db.query(Cliente)
     
-    # Aplicar filtros se fornecidos
-    if nome:
-        query = query.filter(Cliente.nome.ilike(f"%{nome}%"))
-    if telefone:
-        query = query.filter(Cliente.telefone.ilike(f"%{telefone}%"))
+    # Aplicar filtro de busca unificada se fornecido
+    if search:
+        query = query.filter(
+            (Cliente.nome.ilike(f"%{search}%")) | 
+            (Cliente.telefone.ilike(f"%{search}%"))
+        )
+    else:
+        # Aplicar filtros específicos se fornecidos
+        if nome:
+            query = query.filter(Cliente.nome.ilike(f"%{nome}%"))
+        if telefone:
+            query = query.filter(Cliente.telefone.ilike(f"%{telefone}%"))
     
     # Contar total de registros para paginação
     total = query.count()

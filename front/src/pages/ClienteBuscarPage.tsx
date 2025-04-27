@@ -6,7 +6,7 @@ const ClienteBuscarPage: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        Buscar Cliente
+        {/* Buscar Cliente */}
       </Typography>
       <ClienteSearch />
     </Box>

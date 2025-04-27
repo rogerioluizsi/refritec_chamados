@@ -21,7 +21,7 @@ const ClienteEditarPage: React.FC = () => {
           Voltar
         </Button>
         <Typography variant="h4" component="h1">
-          Editar Cliente
+          {/* Editar Cliente */}
         </Typography>
       </Box>
 

@@ -15,7 +15,7 @@ const ClienteCriarPage: React.FC = () => {
       margin: '0 auto'
     }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
-        Cadastrar Novo Cliente
+        {/* Cadastrar Novo Cliente */}
       </Typography>
       <ClienteForm onSuccess={handleSuccess} />
     </Box>

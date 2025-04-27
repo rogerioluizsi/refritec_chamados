@@ -15,46 +15,33 @@ import {
   Alert,
   Pagination,
   IconButton,
+  InputAdornment,
 } from '@mui/material';
 import { Search as SearchIcon, Phone as PhoneIcon, Person as PersonIcon, Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
 import { useClientes } from '../../hooks/useClientes';
 import { useNavigate } from 'react-router-dom';
+import { useDebounce } from 'use-debounce';
 
 const ClienteSearch: React.FC = () => {
   const navigate = useNavigate();
-  const { useListClientes, useClienteByTelefone } = useClientes();
+  const { useListClientes } = useClientes();
   
-  const [searchType, setSearchType] = useState<'nome' | 'telefone'>('nome');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300); // 300ms debounce
   const [page, setPage] = useState(1);
-  const [submitted, setSubmitted] = useState(false);
   
+  // Real-time search using the unified search parameter
   const { data: clientesData, isLoading: isLoadingClientes } = useListClientes(
     page,
     10,
-    searchType === 'nome' ? searchTerm : undefined,
-    searchType === 'telefone' ? searchTerm : undefined,
-  );
-  
-  const { data: clienteByTelefone, isLoading: isLoadingByTelefone } = useClienteByTelefone(
-    searchType === 'telefone' ? searchTerm : ''
+    debouncedSearchTerm, // Unified search term for both name and phone
+    undefined,
+    undefined
   );
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setSubmitted(false);
-  };
-  
-  const handleSearchTypeChange = (type: 'nome' | 'telefone') => {
-    setSearchType(type);
-    setSearchTerm('');
-    setSubmitted(false);
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    setSubmitted(true);
+    setPage(1); // Reset to first page on new search
   };
   
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
@@ -74,12 +61,9 @@ const ClienteSearch: React.FC = () => {
   };
 
   const noResultsFound = 
-    submitted && 
-    searchTerm.length > 0 && 
+    debouncedSearchTerm.length > 0 && 
     !isLoadingClientes && 
-    !isLoadingByTelefone && 
-    ((searchType === 'nome' && clientesData?.items.length === 0) || 
-     (searchType === 'telefone' && !clienteByTelefone));
+    clientesData?.items.length === 0;
 
   return (
     <Box>
@@ -88,107 +72,44 @@ const ClienteSearch: React.FC = () => {
           Buscar Cliente
         </Typography>
         
-        <Box sx={{ mb: 3 }}>
-          <Button
-            variant={searchType === 'nome' ? 'contained' : 'outlined'}
-            startIcon={<PersonIcon />}
-            onClick={() => handleSearchTypeChange('nome')}
-            sx={{ mr: 1 }}
-          >
-            Por Nome
-          </Button>
-          <Button
-            variant={searchType === 'telefone' ? 'contained' : 'outlined'}
-            startIcon={<PhoneIcon />}
-            onClick={() => handleSearchTypeChange('telefone')}
-          >
-            Por Telefone
-          </Button>
-        </Box>
-        
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={9}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 id="search"
-                label={`Buscar por ${searchType === 'nome' ? 'nome' : 'telefone'}`}
+                label="Buscar cliente por nome ou telefone"
                 value={searchTerm}
                 onChange={handleSearchInputChange}
-                placeholder={searchType === 'nome' ? "Digite o nome do cliente" : "Digite o telefone (somente números)"}
-                inputProps={{
-                  maxLength: searchType === 'telefone' ? 11 : undefined,
+                placeholder="Digite nome ou telefone para buscar..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
                 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                startIcon={<SearchIcon />}
-                sx={{ height: '56px' }}
-                disabled={searchTerm.length === 0}
-              >
-                Buscar
-              </Button>
             </Grid>
           </Grid>
         </Box>
       </Paper>
       
-      {submitted && searchTerm.length > 0 && (
+      {debouncedSearchTerm.length > 0 && (
         <Paper elevation={1} sx={{ p: 2 }}>
           <Typography variant="h6" component="h3" gutterBottom>
             Resultados da Busca
           </Typography>
           
-          {isLoadingClientes || isLoadingByTelefone ? (
+          {isLoadingClientes ? (
             <Box display="flex" justifyContent="center" my={4}>
               <CircularProgress />
             </Box>
           ) : noResultsFound ? (
             <Alert severity="info">
-              Nenhum cliente encontrado para a busca "{searchTerm}".
+              Nenhum cliente encontrado para a busca "{debouncedSearchTerm}".
             </Alert>
-          ) : searchType === 'telefone' && clienteByTelefone ? (
-            <List>
-              <ListItem
-                secondaryAction={
-                  <Box>
-                    <IconButton 
-                      edge="end" 
-                      aria-label="edit" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditCliente(clienteByTelefone.id_cliente);
-                      }}
-                      sx={{ mr: 1 }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      edge="end" 
-                      aria-label="criar chamado"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCriarChamado(clienteByTelefone.id_cliente, clienteByTelefone.nome);
-                      }}
-                    >
-                      <AddIcon />
-                    </IconButton>
-                  </Box>
-                }
-              >
-                <ListItemButton onClick={() => handleClienteClick(clienteByTelefone.id_cliente)}>
-                  <ListItemText
-                    primary={clienteByTelefone.nome}
-                    secondary={`Telefone: ${clienteByTelefone.telefone} | Endereço: ${clienteByTelefone.endereco}`}
-                  />
-                </ListItemButton>
-              </ListItem>
-            </List>
-          ) : searchType === 'nome' && clientesData?.items ? (
+          ) : clientesData?.items ? (
             <>
               <List>
                 {clientesData.items.map((cliente, index) => (
