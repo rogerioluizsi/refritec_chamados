@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 import hashlib
 import sqlite3
@@ -96,15 +96,15 @@ def login(login_data: LoginData):
         conn = sqlite3.connect('chamados.db')
         cursor = conn.cursor()
         
-        # Fetch password hash, role, and ativo status
+        # Fetch id_usuario, password hash, role, and ativo status
         cursor.execute(
-            "SELECT senha, role, ativo FROM Usuario WHERE username = ?",
+            "SELECT id_usuario, senha, role, ativo FROM Usuario WHERE username = ?",
             (login_data.username,)
         )
         user = cursor.fetchone()
         
         if user:
-            senha_hash, role, ativo = user
+            id_usuario, senha_hash, role, ativo = user
             if not ativo:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -113,7 +113,8 @@ def login(login_data: LoginData):
             if senha_hash == hash_password(login_data.password):
                 return {
                     "message": "Login bem-sucedido",
-                    "role": role
+                    "role": role,
+                    "id_usuario": id_usuario
                 }
         
         raise HTTPException(
@@ -130,7 +131,7 @@ def login(login_data: LoginData):
             conn.close()
 
 @router.post("/users")
-def create_user(user_data: UserCreate, current_user_role: str):
+def create_user(user_data: UserCreate, current_user_role: str = Header(..., alias="X-User-Role")):
     """Create a new user"""
     if not check_user_permissions(current_user_role, user_data.role):
         raise HTTPException(
@@ -181,7 +182,7 @@ def create_user(user_data: UserCreate, current_user_role: str):
             conn.close()
 
 @router.put("/users/{username}")
-def update_user(username: str, user_data: UserUpdate, current_user_role: str):
+def update_user(username: str, user_data: UserUpdate, current_user_role: str = Header(..., alias="X-User-Role")):
     """Update an existing user"""
     try:
         conn = sqlite3.connect('chamados.db')
@@ -255,7 +256,7 @@ def update_user(username: str, user_data: UserUpdate, current_user_role: str):
             conn.close()
 
 @router.delete("/users/{username}")
-def delete_user(username: str, current_user_role: str):
+def delete_user(username: str, current_user_role: str = Header(..., alias="X-User-Role")):
     """Delete a user"""
     try:
         conn = sqlite3.connect('chamados.db')
@@ -292,13 +293,8 @@ def delete_user(username: str, current_user_role: str):
             conn.close()
 
 @router.get("/users")
-def list_users(current_user_role: str):
-    """List all users (admin and gerente only)"""
-    if current_user_role not in ["administrador", "gerente"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para listar os usuários"
-        )
+def list_users(current_user_role: str = Header(..., alias="X-User-Role")):
+    """List all users (any authenticated user)"""
     try:
         conn = sqlite3.connect('chamados.db')
         cursor = conn.cursor()

@@ -30,4 +30,26 @@ api.interceptors.response.use(
     console.error('API Error:', error);
     return Promise.reject(error);
   }
+);
+
+// Add a request interceptor to inject user role and id headers
+api.interceptors.request.use(
+  (config) => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role) {
+          config.headers['X-User-Role'] = user.role;
+        }
+        if (user.id_usuario) {
+          config.headers['current-user-id'] = user.id_usuario;
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
 ); 

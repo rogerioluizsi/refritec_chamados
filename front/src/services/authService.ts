@@ -8,6 +8,7 @@ interface LoginCredentials {
 interface User {
   username: string;
   role: string;
+  id_usuario: string;
 }
 
 export const authService = {
@@ -19,6 +20,7 @@ export const authService = {
         const user: User = {
           username: credentials.username,
           role: response.data.role,
+          id_usuario: response.data.id_usuario,
         };
         localStorage.setItem('user', JSON.stringify(user));
         return user;

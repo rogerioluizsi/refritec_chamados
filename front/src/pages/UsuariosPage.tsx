@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, IconButton } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { api } from '../api/api';
+import { useUser } from '../contexts/UserContext';
 
 // User type
 interface User {
@@ -14,7 +15,7 @@ interface User {
 const roleOptions = [
   { value: 'administrador', label: 'Administrador' },
   { value: 'gerente', label: 'Gerente' },
-  { value: 'funcionario', label: 'Funcionário' },
+  { value: 'funcionario', label: 'Técnico' },
 ];
 
 const UsuariosPage: React.FC = () => {
@@ -27,7 +28,8 @@ const UsuariosPage: React.FC = () => {
   const [form, setForm] = useState({ username: '', nome: '', password: '', role: 'funcionario' });
   const [error, setError] = useState('');
 
-  const userRole = localStorage.getItem('user_role');
+  const { user } = useUser();
+  const userRole = user?.role;
 
   // Only allow administrador or gerente
   useEffect(() => {
@@ -42,7 +44,7 @@ const UsuariosPage: React.FC = () => {
       setLoading(true);
       try {
         const res = await api.get('/users');
-        setUsers(res.data);
+        setUsers(res.data.users || res.data); // support both {users:[]} and []
       } catch (e: any) {
         setError('Erro ao buscar usuários');
       }
@@ -73,7 +75,7 @@ const UsuariosPage: React.FC = () => {
   const handleAddUser = async () => {
     setError('');
     try {
-      await api.post('/users', form, { params: { current_user_role: userRole } });
+      await api.post('/users', form);
       setAddOpen(false);
       window.location.reload();
     } catch (e: any) {
@@ -85,7 +87,7 @@ const UsuariosPage: React.FC = () => {
   const handleEditUser = async () => {
     setError('');
     try {
-      await api.put(`/users/${selectedUser?.username}`, form, { params: { current_user_role: userRole } });
+      await api.put(`/users/${selectedUser?.username}`, form);
       setEditOpen(false);
       window.location.reload();
     } catch (e: any) {
@@ -97,7 +99,7 @@ const UsuariosPage: React.FC = () => {
   const handleDeleteUser = async () => {
     setError('');
     try {
-      await api.delete(`/users/${selectedUser?.username}`, { params: { current_user_role: userRole } });
+      await api.delete(`/users/${selectedUser?.username}`);
       setDeleteOpen(false);
       window.location.reload();
     } catch (e: any) {
@@ -105,13 +107,21 @@ const UsuariosPage: React.FC = () => {
     }
   };
 
-  // Only administrador can add all roles, gerente only funcionario
+  // Only administrador can add all roles, gerente only tecnico
   const availableRoles = userRole === 'administrador' ? roleOptions : roleOptions.filter(r => r.value === 'funcionario');
+
+  // For gerente, only allow edit/delete for tecnicos
+  const canManage = (targetUser: User) => {
+    if (userRole === 'administrador') return true;
+    if (userRole === 'gerente') return targetUser.role === 'funcionario';
+    return false;
+  };
 
   return (
     <Box p={3}>
       {/* <Typography variant="h4" gutterBottom>Usuários</Typography> */}
-      <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddOpen} sx={{ mb: 2 }}>
+      <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddOpen} sx={{ mb: 2 }}
+        disabled={userRole !== 'administrador' && userRole !== 'gerente'}>
         Criar Usuário
       </Button>
       {error && <Typography color="error">{error}</Typography>}
@@ -131,11 +141,11 @@ const UsuariosPage: React.FC = () => {
               <TableRow key={user.username}>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.nome}</TableCell>
-                <TableCell>{user.role}</TableCell>
+                <TableCell>{user.role === 'funcionario' ? 'Técnico' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}</TableCell>
                 <TableCell>{user.ativo ? 'Sim' : 'Não'}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleEditOpen(user)}><EditIcon /></IconButton>
-                  <IconButton onClick={() => handleDeleteOpen(user)}><DeleteIcon /></IconButton>
+                  <IconButton onClick={() => handleEditOpen(user)} disabled={!canManage(user)}><EditIcon /></IconButton>
+                  <IconButton onClick={() => handleDeleteOpen(user)} disabled={!canManage(user)}><DeleteIcon /></IconButton>
                 </TableCell>
               </TableRow>
             ))}

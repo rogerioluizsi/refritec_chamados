@@ -29,6 +29,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 
 const DRAWER_WIDTH = 240;
 
@@ -52,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [clientesOpen, setClientesOpen] = useState(false);
-  const { logout } = useUser();
+  const { logout, user } = useUser();
   
   const handleClientesClick = () => {
     setClientesOpen(!clientesOpen);
@@ -165,6 +166,22 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
           </ListItemButton>
         </ListItem>
       </List>
+      {/* Usuários (User Management) - only for admin/gerente */}
+      {user && (user.role === 'administrador' || user.role === 'gerente') && (
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/usuarios'}
+              onClick={() => handleNavigation('/usuarios')}
+            >
+              <ListItemIcon>
+                <SupervisorAccountIcon />
+              </ListItemIcon>
+              <ListItemText primary="Usuários" />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      )}
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
       <List>

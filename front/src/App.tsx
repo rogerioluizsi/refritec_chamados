@@ -20,6 +20,7 @@ import ClienteBuscarPage from './pages/ClienteBuscarPage';
 import EstatisticasPage from './pages/EstatisticasPage';
 import ChamadoCriarPage from './pages/ChamadoCriarPage';
 import ClienteEditarPage from './pages/ClienteEditarPage';
+import UsuariosPage from './pages/UsuariosPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/clientes/:id" element={<Layout><ClienteDetailPage /></Layout>} />
                 <Route path="/estatisticas" element={<Layout><EstatisticasPage /></Layout>} />
                 <Route path="/calendario" element={<Layout><Calendar /></Layout>} />
+                <Route path="/usuarios" element={<Layout><UsuariosPage /></Layout>} />
               </Route>
             </Routes>
           </Router>
