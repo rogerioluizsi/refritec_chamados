@@ -291,3 +291,36 @@ def delete_user(username: str, current_user_role: str):
         if conn:
             conn.close()
 
+@router.get("/users")
+def list_users(current_user_role: str):
+    """List all users (admin and gerente only)"""
+    if current_user_role not in ["administrador", "gerente"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para listar os usuários"
+        )
+    try:
+        conn = sqlite3.connect('chamados.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT username, nome, role, data_criacao, ativo FROM Usuario")
+        users = cursor.fetchall()
+        user_list = [
+            {
+                "username": u[0],
+                "nome": u[1],
+                "role": u[2],
+                "data_criacao": u[3],
+                "ativo": bool(u[4])
+            }
+            for u in users
+        ]
+        return {"users": user_list}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    finally:
+        if conn:
+            conn.close()
+
